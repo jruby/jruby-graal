@@ -21,10 +21,6 @@ Running
 Dependencies are not currently shaded, which means you must manually
 put all dependencies on the boot classpath.
 
-Java 8 with JVMCI:
 ```
-jruby -J-XX:+UnlockExperimentalVMOptions -J-XX:+EnableJVMCI -J-XX:+UseJVMCICompiler -J-Djvmci.Compiler=jruby-graal -J-Xbootclasspath/a:$JAVA_HOME/jre/lib/jvmci/jvmci-api.jar:$JAVA_HOME/jre/lib/jvmci/jvmci-hotspot.jar:../graal/graal/compiler/mxbuild/dists/graal-compiler.jar:../graal/graal/compiler/mxbuild/dists/graal-hotspot.jar:../graal/graal/compiler/mxbuild/dists/graal-options.jar:../graal/graal/compiler/mxbuild/dists/graal-serviceprovider.jar:../graal/graal/compiler/mxbuild/dists/graal.jar:../graal/graal/sdk/mxbuild/dists/graal-sdk.jar:../jruby-graal/target/jruby-graal-1.0-SNAPSHOT.jar -e 1
-
+java -XX:+UnlockExperimentalVMOptions -XX:+EnableJVMCI -XX:+UseJVMCICompiler -Djvmci.Compiler=jruby-graal --module-path ../jruby-graal/target/jruby-graal-0.1-SNAPSHOT.jar:../jruby-graal/graal/compiler/mxbuild/modules/jdk.internal.vm.compiler.jar:../jruby-graal/graal/sdk/mxbuild/modules/org.graalvm.graal_sdk.jar:../jruby-graal/graal/truffle/mxbuild/modules/com.oracle.truffle.truffle_api.jar --add-exports jdk.internal.vm.ci/jdk.vm.ci.services=jruby.graal -Djruby.home=/Users/headius/projects/jruby -jar ../jruby/lib/jruby.jar -e 1
 ```
-
-Java 9: working on it
