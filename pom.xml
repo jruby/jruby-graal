@@ -38,17 +38,30 @@
       <artifactId>jruby</artifactId>
       <version>9.1.13.0</version>
     </dependency>
-    <!--<dependency>-->
-      <!--<groupId>graal</groupId>-->
-      <!--<artifactId>graal</artifactId>-->
-      <!--<version>0</version>-->
-      <!--<systemPath>/Users/headius/projects/graal/graal/compiler/mxbuild/dists/graal.jar</systemPath>-->
-      <!--<scope>system</scope>-->
-    <!--</dependency>-->
   </dependencies>
 
   <build>
     <plugins>
+      <plugin>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <configuration>
+              <target>
+                <exec failonerror="true" dir="${basedir}/graal/compiler" executable="/bin/sh">
+                  <arg value="-c" />
+                  <arg value="${basedir}/mx/mx" />
+                  <arg value="build" />
+                </exec>
+              </target>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.7.0</version>
@@ -60,6 +73,7 @@
             <arg>--add-exports</arg><arg>jdk.internal.vm.ci/jdk.vm.ci.meta=ALL-UNNAMED</arg>
             <arg>--add-exports</arg><arg>jdk.internal.vm.ci/jdk.vm.ci.runtime=ALL-UNNAMED</arg>
             <arg>--add-exports</arg><arg>jdk.internal.vm.ci/jdk.vm.ci.services=ALL-UNNAMED</arg>
+            <arg>--class-path</arg><arg>${basedir}/graal/compiler/mxbuild/modules/jdk.internal.vm.compiler.jar</arg>
           </compilerArgs>
           <source>9</source>
           <target>9</target>
