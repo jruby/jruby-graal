@@ -55,7 +55,7 @@
               <target>
                 <exec failonerror="true" dir="${basedir}/graal/compiler" executable="/bin/sh">
                   <arg value="-c" />
-                  <arg value="${basedir}/mx/mx build" />
+                  <arg value="git submodule init &amp;&amp; git submodule init &amp;&amp; ${basedir}/mx/mx build" />
                 </exec>
               </target>
             </configuration>
