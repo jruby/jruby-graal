@@ -19,43 +19,32 @@
       <artifactId>jruby</artifactId>
       <version>9.1.13.0</version>
     </dependency>
-    <dependency>
-      <groupId>jdk8-jvmci</groupId>
-      <artifactId>jvmci-services</artifactId>
-      <systemPath>${java.home}/../jre/lib/jvmci-services.jar</systemPath>
-      <version>0</version>
-      <scope>system</scope>
-    </dependency>
-    <dependency>
-      <groupId>jdk8-jvmci</groupId>
-      <artifactId>jvmci-api</artifactId>
-      <systemPath>${java.home}/../jre/lib/jvmci/jvmci-api.jar</systemPath>
-      <version>0</version>
-      <scope>system</scope>
-    </dependency>
-    <dependency>
-      <groupId>jdk8-jvmci</groupId>
-      <artifactId>jvmci-hotspot</artifactId>
-      <systemPath>${java.home}/../jre/lib/jvmci/jvmci-hotspot.jar</systemPath>
-      <version>0</version>
-      <scope>system</scope>
-    </dependency>
-    <dependency>
-      <groupId>graal</groupId>
-      <artifactId>graal</artifactId>
-      <version>0</version>
-      <systemPath>/Users/headius/projects/graal/graal/compiler/mxbuild/dists/graal.jar</systemPath>
-      <scope>system</scope>
-    </dependency>
+    <!--<dependency>-->
+      <!--<groupId>graal</groupId>-->
+      <!--<artifactId>graal</artifactId>-->
+      <!--<version>0</version>-->
+      <!--<systemPath>/Users/headius/projects/graal/graal/compiler/mxbuild/dists/graal.jar</systemPath>-->
+      <!--<scope>system</scope>-->
+    <!--</dependency>-->
   </dependencies>
 
   <build>
     <plugins>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.7.0</version>
         <configuration>
-          <source>8</source>
-          <target>8</target>
+          <compilerArgs>
+            <arg>--add-modules</arg><arg>jdk.internal.vm.ci</arg>
+            <arg>--add-exports</arg><arg>jdk.internal.vm.ci/jdk.vm.ci.code=ALL-UNNAMED</arg>
+            <arg>--add-exports</arg><arg>jdk.internal.vm.ci/jdk.vm.ci.hotspot=ALL-UNNAMED</arg>
+            <arg>--add-exports</arg><arg>jdk.internal.vm.ci/jdk.vm.ci.meta=ALL-UNNAMED</arg>
+            <arg>--add-exports</arg><arg>jdk.internal.vm.ci/jdk.vm.ci.runtime=ALL-UNNAMED</arg>
+            <arg>--add-exports</arg><arg>jdk.internal.vm.ci/jdk.vm.ci.services=ALL-UNNAMED</arg>
+          </compilerArgs>
+          <source>9</source>
+          <target>9</target>
+          <fork>true</fork>
         </configuration>
       </plugin>
     </plugins>
