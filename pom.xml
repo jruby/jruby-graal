@@ -44,6 +44,7 @@
     <plugins>
       <plugin>
         <artifactId>maven-antrun-plugin</artifactId>
+        <version>1.8</version>
         <executions>
           <execution>
             <phase>generate-sources</phase>
@@ -54,8 +55,7 @@
               <target>
                 <exec failonerror="true" dir="${basedir}/graal/compiler" executable="/bin/sh">
                   <arg value="-c" />
-                  <arg value="${basedir}/mx/mx" />
-                  <arg value="build" />
+                  <arg value="${basedir}/mx/mx build" />
                 </exec>
               </target>
             </configuration>
