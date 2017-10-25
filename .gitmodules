@@ -1,0 +1,6 @@
+[submodule "graal"]
+	path = graal
+	url = https://github.com/graalvm/graal
+[submodule "mx"]
+	path = mx
+	url = https://github.com/graalvm/mx
