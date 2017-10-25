@@ -4,16 +4,35 @@
   <groupId>org.jruby</groupId>
   <artifactId>jruby-graal</artifactId>
   <packaging>jar</packaging>
-  <version>1.0-SNAPSHOT</version>
+  <version>0.1-SNAPSHOT</version>
   <name>jruby-graal</name>
-  <url>http://maven.apache.org</url>
+  <url>https://github.com/jruby/jruby-graal.jar</url>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+
+  <parent>
+    <groupId>org.sonatype.oss</groupId>
+    <artifactId>oss-parent</artifactId>
+    <version>7</version>
+  </parent>
+
+  <licenses>
+    <license>
+      <name>The Apache Software License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+  <scm>
+    <connection>scm:git:https://github.com/jruby/jruby-graal.git</connection>
+    <developerConnection>scm:git:git@github.com:jruby/jruby-graal.git</developerConnection>
+    <url>https://github.com/jruby-graal/jruby-graal</url>
+  </scm>
+
   <dependencies>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>3.8.1</version>
-      <scope>test</scope>
-    </dependency>
     <dependency>
       <groupId>org.jruby</groupId>
       <artifactId>jruby</artifactId>
