@@ -36,8 +36,10 @@ import org.graalvm.compiler.phases.PhaseSuite;
 import org.graalvm.compiler.phases.tiers.CompilerConfiguration;
 import org.graalvm.compiler.phases.tiers.HighTierContext;
 import org.graalvm.compiler.phases.tiers.PhaseContext;
+import org.graalvm.compiler.virtual.phases.ea.PartialEscapePhase;
 
 import java.util.Collections;
+import java.util.ListIterator;
 
 public class JRubyJVMCI {
     public static class ServiceLocator extends JVMCIServiceLocator {
@@ -102,7 +104,9 @@ public class JRubyJVMCI {
         @Override
         public PhaseSuite<HighTierContext> createHighTier(OptionValues options) {
             HighTier highTier = new HighTier(options);
-            highTier.prependPhase(new JRubyVirtualizationPhase());
+            ListIterator iter = highTier.findPhase(PartialEscapePhase.class);
+            iter.previous();
+            iter.add(new JRubyVirtualizationPhase());
             return highTier;
         }
     }
@@ -146,12 +150,21 @@ public class JRubyJVMCI {
             nodes.forEach(n -> {
                 if (n.getClass() == NewInstanceNode.class) {
                     NewInstanceNode newInstance = (NewInstanceNode) n;
-                    if (newInstance.instanceClass().getName().contains("jruby")) {
+                    if (isVirtual(newInstance.instanceClass())) {
+                        System.out.println("virtualizing fixnum: " + newInstance);
                         JRubyNewInstanceNode jnin = structuredGraph.add(new JRubyNewInstanceNode(newInstance.instanceClass(), newInstance.fillContents(), newInstance.stateBefore()));
                         structuredGraph.replaceFixedWithFixed(newInstance, jnin);
                     }
                 }
             });
+        }
+
+        private boolean isVirtual(ResolvedJavaType type) {
+            String name = type.getName();
+
+            if (name.contains("RubyFixnum") || name.contains("RubyFloat")) return true;
+
+            return false;
         }
     }
 
@@ -172,7 +185,7 @@ public class JRubyJVMCI {
             for (int i = 0; i < state.length; i++) {
                 state[i] = defaultFieldValue(fields[i]);
             }
-            tool.createVirtualObject(virtualObject, state, Collections.<MonitorIdNode> emptyList(), true);
+            tool.createVirtualObject(virtualObject, state, Collections.<MonitorIdNode> emptyList(), false);
             tool.replaceWithVirtual(virtualObject);
         }
     }
