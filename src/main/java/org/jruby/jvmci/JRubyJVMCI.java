@@ -13,18 +13,16 @@ import jdk.vm.ci.runtime.JVMCICompiler;
 import jdk.vm.ci.runtime.JVMCICompilerFactory;
 import jdk.vm.ci.runtime.JVMCIRuntime;
 import jdk.vm.ci.services.JVMCIServiceLocator;
+import org.graalvm.compiler.core.phases.CoreCompilerConfiguration;
 import org.graalvm.compiler.core.phases.HighTier;
 import org.graalvm.compiler.graph.Node;
 import org.graalvm.compiler.graph.iterators.NodeIterable;
 import org.graalvm.compiler.hotspot.CompilerConfigurationFactory;
+import org.graalvm.compiler.hotspot.CoreCompilerConfigurationFactory;
 import org.graalvm.compiler.hotspot.HotSpotGraalCompiler;
 import org.graalvm.compiler.hotspot.HotSpotGraalCompilerFactory;
 import org.graalvm.compiler.hotspot.HotSpotGraalJVMCIServiceLocator;
 import org.graalvm.compiler.hotspot.HotSpotGraalOptionValues;
-import org.graalvm.compiler.lir.phases.AllocationPhase;
-import org.graalvm.compiler.lir.phases.LIRPhaseSuite;
-import org.graalvm.compiler.lir.phases.PostAllocationOptimizationPhase;
-import org.graalvm.compiler.lir.phases.PreAllocationOptimizationPhase;
 import org.graalvm.compiler.nodes.FrameState;
 import org.graalvm.compiler.nodes.StructuredGraph;
 import org.graalvm.compiler.nodes.ValueNode;
@@ -37,12 +35,8 @@ import org.graalvm.compiler.phases.BasePhase;
 import org.graalvm.compiler.phases.PhaseSuite;
 import org.graalvm.compiler.phases.tiers.CompilerConfiguration;
 import org.graalvm.compiler.phases.tiers.HighTierContext;
-import org.graalvm.compiler.phases.tiers.LowTierContext;
-import org.graalvm.compiler.phases.tiers.MidTierContext;
 import org.graalvm.compiler.phases.tiers.PhaseContext;
-import org.graalvm.compiler.virtual.phases.ea.PartialEscapePhase;
 
-import java.lang.ref.Reference;
 import java.util.Collections;
 
 public class JRubyJVMCI {
@@ -55,17 +49,12 @@ public class JRubyJVMCI {
                 return (S) new CompilerFactory((HotSpotGraalCompilerFactory) locator.getProvider(service));
             }
 
-            if (service == HotSpotVMEventListener.class) {
-                return (S) new HotspotListener();
-            }
-
-//            System.out.println("jvmci requested unavailable service " + service.getName());
-            return null;
+            return locator.getProvider(service);
         }
     }
 
     public static class CompilerFactory extends HotSpotJVMCICompilerFactory {
-        private HotSpotGraalCompilerFactory factory;
+        HotSpotGraalCompilerFactory factory;
 
         public CompilerFactory(HotSpotGraalCompilerFactory factory) {
             this.factory = factory;
@@ -79,18 +68,8 @@ public class JRubyJVMCI {
         @Override
         public JVMCICompiler createCompiler(JVMCIRuntime jvmciRuntime) {
             OptionValues options = HotSpotGraalOptionValues.HOTSPOT_OPTIONS;
-            final CompilerConfigurationFactory configFactory = CompilerConfigurationFactory.selectFactory((String)null, options);
-            CompilerConfigurationFactory jrubyConfigFactory = new CompilerConfigurationFactory("economy", 1) {
-                @Override
-                public CompilerConfiguration createCompilerConfiguration() {
-                    CompilerConfiguration config = configFactory.createCompilerConfiguration();
-                    return new JRubyGraalCompilerConfiguration(config);
-                }
-
-                public CompilerConfigurationFactory.BackendMap createBackendMap() {
-                    return configFactory.createBackendMap();
-                }
-            };
+//            final CompilerConfigurationFactory configFactory = CompilerConfigurationFactory.selectFactory((String)null, options);
+            CompilerConfigurationFactory jrubyConfigFactory = new JRubyCompilerConfigurationFactory();
             Compiler compiler = new Compiler(factory.createCompiler(jvmciRuntime, options, jrubyConfigFactory));
             return compiler;
         }
@@ -111,45 +90,20 @@ public class JRubyJVMCI {
         }
     }
 
-    public static class JRubyGraalCompilerConfiguration implements CompilerConfiguration {
-        private final CompilerConfiguration delegate;
-
-        public JRubyGraalCompilerConfiguration(CompilerConfiguration delegate) {
-            this.delegate = delegate;
-        }
-
+    public static class JRubyCompilerConfigurationFactory extends CoreCompilerConfigurationFactory {
         @Override
-        public PhaseSuite<HighTierContext> createHighTier(OptionValues optionValues) {
-            HighTier highTier = new HighTier(optionValues);
+        public CompilerConfiguration createCompilerConfiguration() {
+//            return new CoreCompilerConfiguration();
+            return new JRubyGraalCompilerConfiguration();
+        }
+    }
 
-            highTier.findPhase(PartialEscapePhase.class).add(new JRubyVirtualizationPhase());
-
+    public static class JRubyGraalCompilerConfiguration extends CoreCompilerConfiguration {
+        @Override
+        public PhaseSuite<HighTierContext> createHighTier(OptionValues options) {
+            HighTier highTier = new HighTier(options);
+            highTier.prependPhase(new JRubyVirtualizationPhase());
             return highTier;
-        }
-
-        @Override
-        public PhaseSuite<MidTierContext> createMidTier(OptionValues optionValues) {
-            return delegate.createMidTier(optionValues);
-        }
-
-        @Override
-        public PhaseSuite<LowTierContext> createLowTier(OptionValues optionValues) {
-            return delegate.createLowTier(optionValues);
-        }
-
-        @Override
-        public LIRPhaseSuite<PreAllocationOptimizationPhase.PreAllocationOptimizationContext> createPreAllocationOptimizationStage(OptionValues optionValues) {
-            return delegate.createPreAllocationOptimizationStage(optionValues);
-        }
-
-        @Override
-        public LIRPhaseSuite<AllocationPhase.AllocationContext> createAllocationStage(OptionValues optionValues) {
-            return delegate.createAllocationStage(optionValues);
-        }
-
-        @Override
-        public LIRPhaseSuite<PostAllocationOptimizationPhase.PostAllocationOptimizationContext> createPostAllocationOptimizationStage(OptionValues optionValues) {
-            return delegate.createPostAllocationOptimizationStage(optionValues);
         }
     }
 
@@ -207,27 +161,19 @@ public class JRubyJVMCI {
             super(type, fillContents, stateBefore);
         }
 
-
-
         @Override
         public void virtualize(VirtualizerTool tool) {
             /*
-             * Reference objects can escape into their ReferenceQueue at any safepoint, therefore
-             * they're excluded from escape analysis.
+             * This is always for virtualizable JRuby objects, so always virtualize.
              */
-            if (!tool.getMetaAccessProvider().lookupJavaType(Reference.class).isAssignableFrom(instanceClass)) {
-                boolean isVirtual = false;
-                if (instanceClass.getName().contains("jruby")) isVirtual = true;
-                System.out.println("graal: " + instanceClass.getName() + " is virt: " + isVirtual);
-                VirtualInstanceNode virtualObject = createVirtualInstanceNode(!isVirtual);
-                ResolvedJavaField[] fields = virtualObject.getFields();
-                ValueNode[] state = new ValueNode[fields.length];
-                for (int i = 0; i < state.length; i++) {
-                    state[i] = defaultFieldValue(fields[i]);
-                }
-                tool.createVirtualObject(virtualObject, state, Collections.<MonitorIdNode> emptyList(), false);
-                tool.replaceWithVirtual(virtualObject);
+            VirtualInstanceNode virtualObject = new VirtualInstanceNode(instanceClass(), false);
+            ResolvedJavaField[] fields = virtualObject.getFields();
+            ValueNode[] state = new ValueNode[fields.length];
+            for (int i = 0; i < state.length; i++) {
+                state[i] = defaultFieldValue(fields[i]);
             }
+            tool.createVirtualObject(virtualObject, state, Collections.<MonitorIdNode> emptyList(), true);
+            tool.replaceWithVirtual(virtualObject);
         }
     }
 
